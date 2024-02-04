@@ -1,0 +1,111 @@
+@font-face {
+  font-family: 'generic-mobile-system';
+  src: url('../fonts/generic-mobile-system.woff2') format('woff2');
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+body {
+  background: #0a5;
+  cursor: grab;
+  font-family: 'generic-mobile-system';
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  height: 100%;
+  position: relative;
+  width: 100%;
+}
+
+.card,
+.cell,
+.foundation {
+  /* width and height for these elements is set dynamically */
+  left: 0;
+  perspective: 500px;
+  position: absolute;
+  top: 0;
+  /* the box shadow looks weird with the flip transition; would need to turn shadow off */
+  /* box-shadow: 0 0.2rem 0.2rem rgba(0, 0 , 0, 0.1); */
+}
+
+.card > img {
+  backface-visibility: hidden;
+  height: 100%;
+  image-rendering: pixelated;
+  position: absolute;
+  transform-style: preserve-3d;
+  width: 100%;
+}
+
+.card .front { transform: rotateY(-180deg); }
+.card .back { transform: rotateY(0); }
+
+#menu {
+  align-items: center;
+  background-color: white;
+  border-bottom: 1px solid black;
+  box-sizing: border-box;
+  cursor: default;
+  display: flex;
+  height: 4%;
+  position: absolute;
+  top: 0;
+  width: 100%;
+}
+
+button {
+  background-color: white;
+  border: 0;
+  color: black;
+  display: block;
+  font-family: 'generic-mobile-system';
+  font-size: 1.5rem;
+  height: 100%;
+  padding: 0 1rem;
+}
+
+button:hover,
+button:active {
+  background-color: #010caa;
+  color: white;
+}
+
+#status {
+  align-items: center;
+  background-color: white;
+  border-top: 1px solid black;
+  bottom: 0;
+  box-sizing: border-box;
+  display: flex;
+  font-size: 1.5rem;
+  height: 4%;
+  justify-content: space-between;
+  position: absolute;
+  width: 100%;
+}
+
+#status span {
+  display: block;
+  margin: 0 0.1rem;
+}
+
+@keyframes burst {
+  0% {
+    box-shadow: 0 0 1rem transparent;
+  }
+  50% {
+    box-shadow: 0 0 1rem white;
+  }
+  100% {
+    box-shadow: 0 0 2rem transparent;
+  }
+}

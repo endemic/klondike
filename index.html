@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>FreeCell</title>
+
+  <link rel="stylesheet" href="stylesheets/main.css">
+
+  <meta name="theme-color" content="#00aa55" media="(orientation: landscape)">
+  <meta name="theme-color" content="#ffffff" media="(orientation: portrait)">
+
+  <link rel="icon" type="image/png" sizes="16x16" href="images/meta/favicon-16x16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="images/meta/favicon-32x32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/meta/apple-touch-icon.png">
+
+  <link rel="manifest" href="meta/site.webmanifest">
+
+  <meta property="og:title" content="FreeCell" />
+  <meta property="og:description" content="Waste even moar time on the internet with this FreeCell clone." />
+  <meta property="og:url" content="https://ganbaru.games/freecell" />
+  <!-- og:image should be more detailed than a favicon; maybe a cropped/scaled screenshot -->
+  <meta property="og:image" content="images/meta/favicon-32x32.png" />
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <section id="menu">
+    <button id="deal">Deal</button>
+    <button id="undo">Undo</button>
+    <button id="help">Help</button>
+  </section>
+
+  <section id="status">
+    <span id="movable_cards">Movable Cards: 5</span>
+    <span id="time">Time: 0</span>
+  </section>
+
+  <script src="scripts/card.js"></script>
+  <script src="scripts/stack.js"></script>
+  <script src="scripts/grabbed.js"></script>
+  <script src="scripts/cell.js"></script>
+  <script src="scripts/cascade.js"></script>
+  <script src="scripts/foundation.js"></script>
+  <script src="scripts/game.js"></script>
+  <script src="scripts/card-waterfall.js"></script>
+
+  <!-- https://tobiasahlin.com/blog/how-to-animate-box-shadow/ -->
+
+</body>
+</html>
