@@ -1,12 +1,14 @@
-class Cell extends Stack {
-  type = 'cell';
+class Talon extends Stack {
+  type = 'talon';
+
+  offset = 0;
 
   constructor() {
     super();
 
     this.element = document.createElement('img');
-    this.element.classList.add('cell');
-    this.element.src = 'images/backs/cell.png';
+    this.element.classList.add('talon');
+    this.element.src = 'images/backs/talon.png';
   }
 
   get size() {

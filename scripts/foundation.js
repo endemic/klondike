@@ -1,6 +1,8 @@
 class Foundation extends Stack {
   type = 'foundation';
 
+  offset = 0;
+
   constructor() {
     super();
 

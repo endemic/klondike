@@ -140,7 +140,7 @@ class Card {
   }
 
   flip(direction) {
-    let duration = 500;
+    let duration = 200;
 
     // if `direction` is not set, then the effect is toggled
     if (direction === 'up') {
@@ -157,11 +157,11 @@ class Card {
 
     // timing for this flip transition is defined in CSS
     if (this.faceUp) {
-      this.element.children[0].style.transform = 'rotateY(-180deg)'; // front
+      this.element.children[0].style.transform = 'rotateY(180deg)'; // front
       this.element.children[1].style.transform = 'rotateY(0deg)';    // back
     } else {
       this.element.children[0].style.transform = 'rotateY(0deg)';   // front
-      this.element.children[1].style.transform = 'rotateY(180deg)'; // back
+      this.element.children[1].style.transform = 'rotateY(-180deg)'; // back
     }
 
     this.faceUp = !this.faceUp;

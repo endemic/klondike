@@ -55,9 +55,9 @@ let gameOver = false;
 let time = 0;
 
 const cascades = [];
-for (let i = 0; i < 8; i += 1) {
+for (let i = 0; i < 7; i += 1) {
   const cascade = new Cascade();
-  cascade.moveTo(10 + (85 * i), 100);
+  // cascade.moveTo(10 + (85 * i), 100);
   cascades.push(cascade);
 
   // these don't have a visible component,
@@ -67,22 +67,18 @@ for (let i = 0; i < 8; i += 1) {
 const foundations = [];
 for (let i = 0; i < 4; i += 1) {
   const foundation = new Foundation();
-  foundation.moveTo(10 + (85 * i), 10);
+  // foundation.moveTo(10 + (85 * i), 10);
   foundations.push(foundation);
 
   // Make these visible by adding to DOM
   document.body.append(foundation.element);
 }
 
-const cells = [];
-for (let i = 4; i < 8; i += 1) {
-  const cell = new Cell();
-  cell.moveTo(10 + (85 * i), 10);
-  cells.push(cell);
+const talon = new Talon();
+document.body.append(talon.element);
 
-  // Make these visible by adding to DOM
-  document.body.append(cell.element);
-}
+const waste = new Waste();
+document.body.append(waste.element);
 
 const grabbed = new Grabbed();
 
@@ -132,17 +128,6 @@ const checkWin = () => {
   });
 };
 
-// Electronic versions of the game allow you to pick up multiple
-// cards as a shortcut for putting them into open cells one at a time
-// You're always allowed to move at least one card, so the "formula"
-// is (open cells + 1)
-const movableCards = () => {
-  // TODO: max = Math.pow(2, emptyCascades) * (emptyCells + 1)
-  return cells.reduce((total, cell) => total + (cell.hasCards ? 0 : 1), 1);
-};
-
-const updateMovableCardsLabel = () => document.querySelector('#movable_cards').textContent = `Movable Cards: ${movableCards()}`;
-
 const attemptToPlayOnFoundation = card => {
   for (let i = 0; i < foundations.length; i += 1) {
     const foundation = foundations[i];
@@ -175,8 +160,6 @@ const attemptToPlayOnFoundation = card => {
         });
       }
 
-      updateMovableCardsLabel();
-
       // if we have a valid play, return from this function;
       return;
     }
@@ -191,8 +174,9 @@ const reset = () => {
   });
 
   cascades.forEach(c => c.child = null);
-  cells.forEach(c => c.child = null);
   foundations.forEach(f => f.child = null);
+  talon.child = null;
+  waste.child = null;
 
   time = 0;
   gameOver = false;
@@ -220,30 +204,48 @@ const deal = async () => {
   for (let index = 0; index < cards.length; index += 1) {
     const card = cards[index];
 
-    // move all cards on top of first foundation
-    card.moveTo(foundations[0].x, foundations[0].y);
+    // move all cards on top of talon
+    card.moveTo(talon.x, talon.y);
     card.zIndex = 51 - index;
   }
 
   // deal cards
+  // for (let index = 0; index < 28; index += 1) {
+  //   const card = cards[index];
+  //   const cascadeIndex = index % cascades.length;
+  //   console.log(index)
+
+  //   const cascade = cascades[cascadeIndex];
+  //   const lastCard = cascade.lastCard;
+
+  //   // this causes some cards to be skipped,
+  //   // as the index value increases but the card isn't placed
+  //   if (lastCard.faceUp) {
+  //     continue;
+  //   }
+
+  //   if (cascadeIndex === cascade.cardCount - 1) {
+  //     card.flip();
+  //   }
+
+  //   card.setParent(lastCard);
+  //   card.animateTo(lastCard.x, lastCard.y + offset);
+
+  //   await waitAsync(50);
+
+  //   // update z-index of the card _after_ the synchronous delay;
+  //   // this gives the animation time to move the card away from the deck
+  //   card.resetZIndex()
+
+  //   offset = index < 7 ? 0 : card.offset;
+  // };
+
+  // put rest of cards in talon
   for (let index = 0; index < cards.length; index += 1) {
     const card = cards[index];
-
-    const cascade = cascades[index % cascades.length];
-    const lastCard = cascade.lastCard;
-
-    card.setParent(lastCard);
-    card.animateTo(lastCard.x, lastCard.y + offset);
-    card.flip();
-
-    await waitAsync(50);
-
-    // update z-index of the card _after_ the synchronous delay;
-    // this gives the animation time to move the card away from the deck
-    card.resetZIndex()
-
-    offset = index < 7 ? 0 : card.offset;
-  };
+    card.setParent(talon.lastCard);
+  }
+  talon.resetZIndex();
 };
 
 cards.forEach(card => {
@@ -260,6 +262,22 @@ cards.forEach(card => {
     lastOnDownTimestamp = doubleClick ? 0 : Date.now();
     previousPoint = point;
 
+    // check if player clicked top card of talon
+    if (card.stackType === 'talon') {
+      card.setParent(waste.lastCard);
+      card.animateTo(waste.x, waste.y);
+      card.flip();
+    }
+
+    if (!card.faceUp && card.hasCards) {
+      console.log(`can't pick up a card stack that's not face up`)
+    }
+
+    if (!card.faceUp && !card.hasCards) {
+      card.flip();
+      return;
+    }
+
     // can only double-click to play on a foundation
     // if card is last in a cascade/cell
     if (doubleClick && !card.hasCards && !card.animating) {
@@ -271,12 +289,6 @@ cards.forEach(card => {
     // only allow alternating sequences of cards to be picked up
     if (!card.childrenInSequence) {
       console.log(`can't pick up ${card}, not a sequence!`);
-      return;
-    }
-
-    // only allow a certain number of cards to be picked up
-    if (card.childCount >= movableCards()) {
-      console.log(`You can only pick up ${movableCards()} cards!`);
       return;
     }
 
@@ -338,38 +350,36 @@ const onUp = e => {
         });
       }
 
-      updateMovableCardsLabel();
-
       // valid play, so break out of the loop checking other foundations
       return;
     }
   }
 
-  // check cells
-  for (let i = 0; i < cells.length; i += 1) {
-    const cell = cells[i];
+  // // check cells
+  // for (let i = 0; i < cells.length; i += 1) {
+  //   const cell = cells[i];
 
-    // only allow placemnt in a cell if the cell is empty and
-    // player is holding a single card
-    if (grabbed.overlaps(cell) && !cell.hasCards && !card.hasCards) {
-      let parent = cell;
+  //   // only allow placemnt in a cell if the cell is empty and
+  //   // player is holding a single card
+  //   if (grabbed.overlaps(cell) && !cell.hasCards && !card.hasCards) {
+  //     let parent = cell;
 
-      undoStack.push({
-        card,
-        parent,
-        oldParent: card.parent
-      });
+  //     undoStack.push({
+  //       card,
+  //       parent,
+  //       oldParent: card.parent
+  //     });
 
-      grabbed.drop(cell);
+  //     grabbed.drop(cell);
 
-      console.log(`dropping ${card} on cell #${i}`);
+  //     console.log(`dropping ${card} on cell #${i}`);
 
-      updateMovableCardsLabel();
+  //     updateMovableCardsLabel();
 
-      // valid play, so return out of the loop checking other cells
-      return;
-    }
-  }
+  //     // valid play, so return out of the loop checking other cells
+  //     return;
+  //   }
+  // }
 
   // check cascades
   for (let i = 0; i < cascades.length; i += 1) {
@@ -387,8 +397,6 @@ const onUp = e => {
       grabbed.drop(parent);
 
       console.log(`dropping ${card} on cascade #${i}`);
-
-      updateMovableCardsLabel();
 
       // valid play, so return out of the loop checking other cells
       return;
@@ -439,7 +447,7 @@ const onResize = () => {
   let windowMargin = (windowWidth - tableauWidth) / 2;
 
   // tweak these values as necessary
-  let margin = (4 / 608) * tableauWidth;
+  let margin = (14 / 608) * tableauWidth;
 
   // if tableau is 608pt wide, then for 8 columns
   // each column + margin should be 76
@@ -457,12 +465,6 @@ const onResize = () => {
 
   for (const foundation of foundations) {
     foundation.size = { width, height };
-    foundation.offset = 0;
-  }
-
-  for (const cell of cells) {
-    cell.size = { width, height };
-    cell.offset = 0;
   }
 
   for (const card of cards) {
@@ -472,6 +474,9 @@ const onResize = () => {
 
   grabbed.size = { width, height };
   grabbed.offset = offset;
+
+  talon.size = { width, height };
+  waste.size = { width, height };
 
   // Layout code
   const menu = document.querySelector('#menu');
@@ -484,18 +489,19 @@ const onResize = () => {
   const top = margin + menu.offsetHeight;
   const left = windowMargin + margin / 2;
 
+  talon.x = windowWidth - windowMargin - margin - width;
+  talon.y = top;
+
+  waste.x = talon.x - margin - width;
+  waste.y = top;
+
   // foundations on the left
   foundations.forEach((f, i) => {
     f.moveTo(left + (width + margin) * i, top);
   });
 
-  // cells are on the right; the (i + 4) allows space for foundations
-  cells.forEach((c, i) => {
-    c.moveTo(left + (width + margin) * (i + 4), top)
-  });
-
   cascades.forEach((c, i) => {
-      // allows space for cells/foundation
+    // allows space for cells/foundation
     c.moveTo(windowMargin + margin / 2 + (width + margin) * i, top + height + margin)
   });
 };
@@ -520,8 +526,6 @@ const undo = () => {
   grabbed.moved = true;
 
   grabbed.drop(oldParent);
-
-  updateMovableCardsLabel();
 };
 
 const onKeyDown = e => {
