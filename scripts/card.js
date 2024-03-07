@@ -52,7 +52,7 @@ class Card {
    front.src = `images/${this.suit}/${this.rank}.png`;
    front.classList.add('front');
    const back = document.createElement('img');
-   back.src = `images/backs/one.png`;
+   back.src = `images/other/card-back.png`;
    back.classList.add('back');
 
    this.element.append(front, back);
@@ -125,12 +125,12 @@ class Card {
     this.element.style.translate = `${this.x}px ${this.y}px 0px`;
   }
 
-  animateTo(x, y) {
+  animateTo(x, y, duration) {
     this.x = x;
     this.y = y;
 
     this.animating = true;
-    const duration = 300;
+    duration ||= 300;
 
     // https://www.cssportal.com/css-cubic-bezier-generator/
     this.element.style.transition = `translate ${duration}ms cubic-bezier( 0.175, 0.885, 0.32, 1.275 )`;
@@ -167,6 +167,37 @@ class Card {
     this.faceUp = !this.faceUp;
   }
 
+  invert(value) {
+    this.element.style.filter = `invert(${value ? 1 : 0})`;
+  }
+
+  invertMovableCards(cardCount) {
+    let invert = false;
+    let invertedParentCard = null;
+
+    for (let c of this.children()) {
+      if (!invert && c.childCount < cardCount && c.childrenInSequence) {
+        invert = true;
+        invertedParentCard = c;
+      }
+
+      if (invert) {
+        c.invert(true)
+      }
+    }
+
+    return invertedParentCard;
+  }
+
+  resetInvert() {
+    this.invert(false);
+
+    for (let c of this.children()) {
+      c.invert(false);
+    }
+
+  }
+
   flash() {
     this.element.style.animation = 'burst 250ms';
     wait(250).then(() => this.element.style.animation = '');
@@ -183,7 +214,7 @@ class Card {
     this.width = width;
     this.height = height;
 
-    console.log(`setting card size: ${width}, ${height}`);
+    log(`setting card size: ${width}, ${height}`);
 
     this.element.style.width = `${this.width}px`;
     this.element.style.height = `${this.height}px`;

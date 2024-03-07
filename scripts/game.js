@@ -1,37 +1,3 @@
-const wait = ms => {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
-};
-
-const waitAsync = async ms => {
-  return new Promise(resolve => {
-    setTimeout(resolve, ms);
-  });
-};
-
-const dist = (a, b) => Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
-
-const getPoint = event => {
-  if (event.changedTouches && event.changedTouches.length > 0) {
-    return {
-      x: event.changedTouches[0].clientX,
-      y: event.changedTouches[0].clientY
-    };
-  }
-
-  return {
-    x: event.x,
-    y: event.y
-  };
-}
-
-const log = () => {
-  if (DEBUG) {
-    console.log(arguments);
-  }
-};
-
 const SUITS = ['hearts', 'spades', 'diamonds', 'clubs'];
 const RANKS = ['ace', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king'];
 const DEBUG = false;
@@ -49,7 +15,10 @@ let previousPoint = { x: 0, y: 0};
 const undoStack = [];
 
 // boolean which can be checked to short-circuit player interaction, etc.
-let gameOver = false;
+let gameOver = true;
+
+// allow deal without confirmation on app load
+let firstGame = true;
 
 // current time elapsed in seconds
 let time = 0;
@@ -151,12 +120,29 @@ const attemptToPlayOnFoundation = card => {
       // Ensure card z-index is correct _after_ it animates
       wait(250).then(() => card.resetZIndex());
 
-      console.log(`playing ${card} on foundation #${i}`);
+      log(`playing ${card} on foundation #${i}`);
 
       if (checkWin()) {
+        gameOver = true;
+
+        // increment games won counter
+        let key = 'freecell:wonGames';
+        let wonGames = parseInt(localStorage.getItem(key), 10) || 0;
+        localStorage.setItem(key, wonGames + 1);
+
+        // check for fastest game time
+        key = 'freecell:fastestGame';
+        let fastestGame = localStorage.getItem(key);
+        if (time < fastestGame) {
+          localStorage.setItem(key, time);
+        }
+
+        // wait for animation to finish
+        await waitAsync(250);
+
         CardWaterfall.start(() => {
           reset();
-          deal();
+          stackCards();
         });
       }
 
@@ -171,19 +157,22 @@ const reset = () => {
     c.parent = null;
     c.child = null;
     c.flip('down');
+    c.invert(false);
   });
 
   cascades.forEach(c => c.child = null);
+  cells.forEach(c => c.child = null);
   foundations.forEach(f => f.child = null);
-  talon.child = null;
-  waste.child = null;
 
   time = 0;
-  gameOver = false;
-  undoStack.length = 0; // trick to empty an array
+  document.querySelector('#time').textContent = `Time: ${time}`;
+
+  undoStack.length = 0; // hack to empty an array
+
+  updateMovableCardsLabel();
 };
 
-const deal = async () => {
+const stackCards = () => {
   // shuffle deck
   let currentIndex = cards.length;
   let randomIndex;
@@ -208,12 +197,10 @@ const deal = async () => {
     card.moveTo(talon.x, talon.y);
     card.zIndex = 51 - index;
   }
+};
 
-  // deal cards
-  // for (let index = 0; index < 28; index += 1) {
-  //   const card = cards[index];
-  //   const cascadeIndex = index % cascades.length;
-  //   console.log(index)
+const deal = async () => {
+  let offset = 0;
 
   //   const cascade = cascades[cascadeIndex];
   //   const lastCard = cascade.lastCard;
@@ -233,24 +220,24 @@ const deal = async () => {
 
   //   await waitAsync(50);
 
-  //   // update z-index of the card _after_ the synchronous delay;
-  //   // this gives the animation time to move the card away from the deck
-  //   card.resetZIndex()
+    offset = index < 7 ? 0 : card.offset;
+  };
 
-  //   offset = index < 7 ? 0 : card.offset;
-  // };
+  // increment games played counter
+  const key = 'freecell:playedGames';
+  let playedGames = parseInt(localStorage.getItem(key), 10) || 0;
+  localStorage.setItem(key, playedGames + 1);
 
-  // put rest of cards in talon
-  for (let index = 0; index < cards.length; index += 1) {
-    const card = cards[index];
-    card.setParent(talon.lastCard);
-  }
-  talon.resetZIndex();
+  gameOver = false;
 };
 
 cards.forEach(card => {
   const onDown = e => {
     e.preventDefault();
+
+    if (gameOver) {
+      return;
+    }
 
     const point = getPoint(e);
     const delta = Date.now() - lastOnDownTimestamp;
@@ -281,7 +268,7 @@ cards.forEach(card => {
     // can only double-click to play on a foundation
     // if card is last in a cascade/cell
     if (doubleClick && !card.hasCards && !card.animating) {
-      console.log(`double click! attempt to play ${card} on foundations`);
+      log(`double click! attempt to play ${card} on foundations`);
       attemptToPlayOnFoundation(card);
       return;
     }
@@ -295,7 +282,7 @@ cards.forEach(card => {
     grabbed.grab(card);
     grabbed.setOffset(point);
 
-    console.log(`onDown on ${card}, offset: ${point.x}, ${point.y}`);
+    log(`onDown on ${card}, offset: ${point.x}, ${point.y}`);
   };
 
   card.element.addEventListener('mousedown', onDown);
@@ -314,7 +301,7 @@ const onMove = e => {
   grabbed.moveTo(point);
 };
 
-const onUp = e => {
+const onUp = async e => {
   e.preventDefault();
 
   if (!grabbed.hasCards) {
@@ -396,7 +383,9 @@ const onUp = e => {
 
       grabbed.drop(parent);
 
-      console.log(`dropping ${card} on cascade #${i}`);
+      log(`dropping ${card} on cascade #${i}`);
+
+      updateMovableCardsLabel();
 
       // valid play, so return out of the loop checking other cells
       return;
@@ -405,7 +394,7 @@ const onUp = e => {
 
   // if we got this far, that means no valid move was made,
   // so the card(s) can go back to their original position
-  console.log('invalid move; dropping card(s) on original position');
+  log('invalid move; dropping card(s) on original position');
 
   grabbed.drop();
 };
@@ -415,20 +404,6 @@ const onResize = () => {
   const windowHeight = window.innerHeight;
 
   const aspectRatio = 4 / 3;
-  const scale = window.devicePixelRatio;
-  const canvas = document.querySelector('#canvas');
-
-  // canvas is as large as the window;
-  canvas.style.width = `${windowWidth}px`;
-  canvas.style.height = `${windowHeight}px`;
-
-  // account for high DPI screens
-  // TODO: resizing the canvas while the card waterfall is running will erase all
-  // previously drawn content. It's possible to persist it by copying to an unattached
-  // canvas node, resizing, then drawing the copy back to the main canvas
-  // https://stackoverflow.com/a/10658422
-  canvas.width = Math.floor(windowWidth * scale);
-  canvas.height = Math.floor(windowHeight * scale);
 
   // playable area, where cards will be drawn
   let tableauWidth;
@@ -484,7 +459,7 @@ const onResize = () => {
 
   // add internal padding to menu/status bars
   menu.style.padding = `0 0 0 ${windowMargin}px`;
-  status.style.padding = `0 ${windowMargin}px`;
+  status.style.padding = `0 ${windowMargin + margin}px`;
 
   const top = margin + menu.offsetHeight;
   const left = windowMargin + margin / 2;
@@ -504,11 +479,20 @@ const onResize = () => {
     // allows space for cells/foundation
     c.moveTo(windowMargin + margin / 2 + (width + margin) * i, top + height + margin)
   });
+
+  // Handle resizing <canvas> for card waterfall
+  CardWaterfall.onResize(windowWidth, windowHeight);
+
+  // if in a "game over" state, cards are stacked on top of the left-most foundation, and
+  // won't be moved along with it, because they are not attached
+  if (gameOver) {
+    cards.forEach(c => c.moveTo(foundations[0].x, foundations[0].y));
+  }
 };
 
 const undo = () => {
   if (undoStack.length < 1) {
-    console.log('No previously saved moves on the undo stack.');
+    log('No previously saved moves on the undo stack.');
     return;
   }
 
@@ -540,11 +524,14 @@ const onKeyDown = e => {
 const onDeal = e => {
   e.preventDefault();
 
-  if (!confirm('New game?')) {
+  if (!firstGame && !confirm('New game?')) {
     return;
   }
 
+  firstGame = false;
+
   reset();
+  stackCards();
   deal();
 };
 
@@ -558,12 +545,6 @@ const onUndo = e => {
   undo();
 };
 
-const onHelp = e => {
-  e.preventDefault();
-
-  window.open('https://en.wikipedia.org/wiki/FreeCell', '_blank');
-};
-
 document.body.addEventListener('mousemove', onMove);
 document.body.addEventListener('touchmove', onMove);
 document.body.addEventListener('mouseup', onUp);
@@ -572,16 +553,18 @@ document.body.addEventListener('touchend', onUp);
 window.addEventListener('resize', onResize);
 window.addEventListener('keydown', onKeyDown);
 
-const dealButton = document.querySelector('#deal');
-const undoButton = document.querySelector('#undo');
-const helpButton = document.querySelector('#help');
+const dealButton = document.querySelector('#deal_button');
+const undoButton = document.querySelector('#undo_button');
+const aboutButton = document.querySelector('#about_button');
 
 dealButton.addEventListener('mouseup', onDeal);
 undoButton.addEventListener('mouseup', onUndo);
-helpButton.addEventListener('mouseup', onHelp);
+aboutButton.addEventListener('mouseup', showAboutScreen);
+// Mobile Safari seems to have some undocumented conditions that need
+// to be met before it will fire `click` events
 dealButton.addEventListener('touchend', onDeal);
 undoButton.addEventListener('touchend', onUndo);
-helpButton.addEventListener('touchend', onHelp);
+aboutButton.addEventListener('touchend', showAboutScreen);
 
 // start timer
 window.setInterval(() => {
@@ -596,6 +579,5 @@ window.setInterval(() => {
 // initial resize
 onResize();
 
-if (!DEBUG) {
-  deal();
-}
+// stack cards in place
+stackCards();

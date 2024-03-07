@@ -28,7 +28,7 @@ class Grabbed extends Stack {
     // to allow for easier double-click to play
     let d = dist(point, this.origin);
     if (d < 5) {
-      console.log(`didn't move enough: ${d}`);
+      log(`didn't move enough: ${d}`);
       return;
     }
 
@@ -78,38 +78,31 @@ class Grabbed extends Stack {
     this.width = width;
     this.height = height;
 
-    console.log(`setting ${this.type} size: ${width}, ${height}`);
+    log(`setting ${this.type} size: ${width}, ${height}`);
   }
 
   // returns true if the "grabbed" bounding box overlaps
   // the passed arg bounding box
   overlaps(target) {
-    if (isNaN(target.size.width) ||
-        isNaN(target.size.height) ||
-        isNaN(this.size.height) ||
-        isNaN(this.size.height)) {
-          // cascades have NaN value for height?
-      debugger;
-    }
     // Calculate the sides of the boxes
     let left1 = target.x;
     let right1 = target.x + target.size.width;
     let top1 = target.y;
     let bottom1 = target.y + target.size.height;
 
-    let left2 = this.x;
-    let right2 = this.x + this.size.width;
+    // make AABB slightly narrower for less aggressive collision detection
+    let margin = this.size.width / 6;
+
+    let left2 = this.x + margin;
+    let right2 = this.x + this.size.width - margin;
     let top2 = this.y;
     let bottom2 = this.y + this.size.height;
 
-    // console.log(`comparing collision of ${target.size.width}x${target.size.height} @ (${target.x}, ${target.y}) vs. ${this.size.width}x${this.size.height}  @ (${this.x}, ${this.y})`);
-
-    // Check for collisions
     if (bottom1 < top2 || top1 > bottom2 || right1 < left2 || left1 > right2) {
-      return false; // No collision
+      return false;
     }
 
-    return true; // Collision detected
+    return true;
   }
 
   // sets the `child` prop of the `grabbed` object, and adjusts each card's z-index
@@ -118,7 +111,7 @@ class Grabbed extends Stack {
 
     let index = 52; // highest possible z-index for a 52 card deck
     for (let card of this.children()) {
-      console.log(`setting z-index of grabbed card ${card} to be ${index}`);
+      log(`setting z-index of grabbed card ${card} to be ${index}`);
       card.zIndex = index;
       index += 1;
     }
@@ -131,7 +124,7 @@ class Grabbed extends Stack {
     // on the original parent
     target = target || card.parent;
 
-    console.log(`dropping on ${target.type || 'another card'}`);
+    log(`dropping on ${target.type || 'another card'}`);
 
     card.setParent(target);
 

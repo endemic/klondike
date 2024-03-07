@@ -116,7 +116,7 @@ class Stack {
     this.element.style.width = `${this.width}px`;
     this.element.style.height = `${this.height}px`;
 
-    console.log(`setting ${this.type} size: ${width}, ${height}`);
+    log(`setting ${this.type} size: ${width}, ${height}`);
   }
 
 

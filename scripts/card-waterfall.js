@@ -24,6 +24,31 @@ const CardWaterfall = {
     this.interval = window.setInterval(() => this.update(), 16);
   },
 
+  onResize(width, height) {
+    // problem: changing canvas width will erase it, so we
+    // need to copy previously-drawn data to resized canvas
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = this.canvas.width;
+    tempCanvas.height = this.canvas.height;
+
+    const tempContext = tempCanvas.getContext('2d');
+    tempContext.drawImage(this.canvas, 0, 0);
+
+    this.canvas.style.width = `${width}px`;
+    this.canvas.style.height = `${height}px`;
+
+    // multiply the "visible" width by devicePixelRatio to account for high DPI screens
+    const scaledWidth = width * window.devicePixelRatio;
+    const scaledHeight = height * window.devicePixelRatio;
+
+    this.canvas.width = scaledWidth;
+    this.canvas.height = scaledHeight;
+
+    // could scale the image here by adding (scaledWidth, scaledHeight) as args
+    // to `drawImage`, but it kinda looks janky
+    this.canvas.getContext('2d').drawImage(tempCanvas, 0, 0);
+  },
+
   get randomSign() {
     return Math.random() > 0.5 ? 1 : -1;
   },
@@ -40,7 +65,7 @@ const CardWaterfall = {
       y: ((Math.random() * y) + y) * -1
     };
 
-    console.log(v);
+    log(v);
 
     return v;
   },
@@ -136,7 +161,7 @@ const CardWaterfall = {
     const context = this.canvas.getContext('2d');
     context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-    console.log('running waterfall callback');
+    log('running waterfall callback');
     this.callback();
   }
 };

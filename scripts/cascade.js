@@ -29,7 +29,7 @@ class Cascade extends Stack {
     this.width = width;
     this.height = height;
 
-    console.log(`setting ${this.type} size: ${width}, ${height}`);
+    log(`setting ${this.type} size: ${width}, ${height}`);
   }
 
   validPlay (card) {
