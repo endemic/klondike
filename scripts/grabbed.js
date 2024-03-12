@@ -131,14 +131,14 @@ class Grabbed extends Stack {
     if (this.moved) {
       let offset = this.offset;
 
-      // Don't add card overlap if dropping on an empty cascade or cell
-      if (['cascade', 'cell'].includes(target.type)) {
+      // Don't add card overlap if dropping on an empty cascade
+      if (['cascade'].includes(target.type)) {
         offset = 0;
       }
 
-      // don't add card overlap on foundations; note that we use
-      // "stackType" here since cards can stack up on foundations
-      if (['foundation'].includes(target.stackType)) {
+      // don't add card overlap on foundations or waste; note that we use
+      // "stackType" here since cards can stack up on these targets
+      if (['foundation', 'waste'].includes(target.stackType)) {
         offset = 0;
       }
 

@@ -35,8 +35,8 @@ class Cascade extends Stack {
   validPlay (card) {
     const lastCard = this.lastCard;
 
-    // if no other cards in the cascade, any card is allowed
-    if (!lastCard.parent) {
+    // if no other cards in the cascade, only kings are allowed
+    if (!lastCard.parent && card.rank === 'king') {
       return true;
     }
 

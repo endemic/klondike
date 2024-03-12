@@ -97,7 +97,7 @@ const checkWin = () => {
   });
 };
 
-const attemptToPlayOnFoundation = card => {
+const attemptToPlayOnFoundation = async card => {
   for (let i = 0; i < foundations.length; i += 1) {
     const foundation = foundations[i];
 
@@ -126,12 +126,12 @@ const attemptToPlayOnFoundation = card => {
         gameOver = true;
 
         // increment games won counter
-        let key = 'freecell:wonGames';
+        let key = 'klondike:wonGames';
         let wonGames = parseInt(localStorage.getItem(key), 10) || 0;
         localStorage.setItem(key, wonGames + 1);
 
         // check for fastest game time
-        key = 'freecell:fastestGame';
+        key = 'klondike:fastestGame';
         let fastestGame = localStorage.getItem(key);
         if (time < fastestGame) {
           localStorage.setItem(key, time);
@@ -161,15 +161,14 @@ const reset = () => {
   });
 
   cascades.forEach(c => c.child = null);
-  cells.forEach(c => c.child = null);
   foundations.forEach(f => f.child = null);
+  talon.child = null;
+  waste.child = null;
 
   time = 0;
   document.querySelector('#time').textContent = `Time: ${time}`;
 
   undoStack.length = 0; // hack to empty an array
-
-  updateMovableCardsLabel();
 };
 
 const stackCards = () => {
@@ -187,44 +186,46 @@ const stackCards = () => {
     [cards[currentIndex], cards[randomIndex]] = [cards[randomIndex], cards[currentIndex]];
   }
 
-  let offset = 0;
-
-  // move cards back to initial position
+  // move all cards to the talon
   for (let index = 0; index < cards.length; index += 1) {
     const card = cards[index];
-
-    // move all cards on top of talon
     card.moveTo(talon.x, talon.y);
-    card.zIndex = 51 - index;
+    card.setParent(talon.lastCard);
+    card.zIndex = index;
   }
 };
 
 const deal = async () => {
-  let offset = 0;
+  const lastCascade = cascades[cascades.length - 1];
+  let index = 0;
 
-  //   const cascade = cascades[cascadeIndex];
-  //   const lastCard = cascade.lastCard;
+  while (lastCascade.cardCount < 7) {
+    const card = talon.lastCard;
+    const cascade = cascades[index];
 
-  //   // this causes some cards to be skipped,
-  //   // as the index value increases but the card isn't placed
-  //   if (lastCard.faceUp) {
-  //     continue;
-  //   }
+    if (cascade.cardCount === index + 1) {
+      index = index + 1 >= cascades.length ? 0 : index + 1;
+      log(`going to next cascade: ${index}`);
+      continue;
+    }
 
-  //   if (cascadeIndex === cascade.cardCount - 1) {
-  //     card.flip();
-  //   }
+    // TODO: figure out offset for face down cards
+    let offset = cascade.cardCount === 0 ? 0 : 25; // cascade.offset;
+    let lastCard = cascade.lastCard;
+    card.setParent(lastCard);
+    card.zIndex = lastCard.zIndex + 1;
+    card.animateTo(lastCard.x, lastCard.y + offset);
 
-  //   card.setParent(lastCard);
-  //   card.animateTo(lastCard.x, lastCard.y + offset);
+    if (cascade.cardCount === index + 1) {
+      card.flip();
+    }
 
-  //   await waitAsync(50);
-
-    offset = index < 7 ? 0 : card.offset;
-  };
+    await waitAsync(50);
+    index = index + 1 >= cascades.length ? 0 : index + 1;
+  }
 
   // increment games played counter
-  const key = 'freecell:playedGames';
+  const key = 'klondike:playedGames';
   let playedGames = parseInt(localStorage.getItem(key), 10) || 0;
   localStorage.setItem(key, playedGames + 1);
 
@@ -250,10 +251,15 @@ cards.forEach(card => {
     previousPoint = point;
 
     // check if player clicked top card of talon
+    //
     if (card.stackType === 'talon') {
-      card.setParent(waste.lastCard);
+      const newParent = waste.lastCard;
+      card.setParent(newParent);
+      card.zIndex = newParent.zIndex + 1;
+      console.log(`setting waste card z-index to ${card.zIndex}`);
       card.animateTo(waste.x, waste.y);
       card.flip();
+      return;
     }
 
     if (!card.faceUp && card.hasCards) {
@@ -333,7 +339,7 @@ const onUp = async e => {
       if (checkWin()) {
         CardWaterfall.start(() => {
           reset();
-          deal();
+          stackCards();
         });
       }
 
@@ -341,32 +347,6 @@ const onUp = async e => {
       return;
     }
   }
-
-  // // check cells
-  // for (let i = 0; i < cells.length; i += 1) {
-  //   const cell = cells[i];
-
-  //   // only allow placemnt in a cell if the cell is empty and
-  //   // player is holding a single card
-  //   if (grabbed.overlaps(cell) && !cell.hasCards && !card.hasCards) {
-  //     let parent = cell;
-
-  //     undoStack.push({
-  //       card,
-  //       parent,
-  //       oldParent: card.parent
-  //     });
-
-  //     grabbed.drop(cell);
-
-  //     console.log(`dropping ${card} on cell #${i}`);
-
-  //     updateMovableCardsLabel();
-
-  //     // valid play, so return out of the loop checking other cells
-  //     return;
-  //   }
-  // }
 
   // check cascades
   for (let i = 0; i < cascades.length; i += 1) {
@@ -384,8 +364,6 @@ const onUp = async e => {
       grabbed.drop(parent);
 
       log(`dropping ${card} on cascade #${i}`);
-
-      updateMovableCardsLabel();
 
       // valid play, so return out of the loop checking other cells
       return;

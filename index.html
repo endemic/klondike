@@ -11,25 +11,24 @@
   <meta name="theme-color" content="#00aa55" media="(orientation: landscape)">
   <meta name="theme-color" content="#ffffff" media="(orientation: portrait)">
 
-  <link rel="icon" type="image/png" sizes="16x16" href="images/meta/favicon-16x16.png">
+  <!-- <link rel="icon" type="image/png" sizes="16x16" href="images/meta/favicon-16x16.png">
   <link rel="icon" type="image/png" sizes="32x32" href="images/meta/favicon-32x32.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="images/meta/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/meta/apple-touch-icon.png"> -->
 
   <link rel="manifest" href="meta/site.webmanifest">
 
   <meta property="og:title" content="Klondike" />
   <meta property="og:description" content="Waste even moar time on the internet with this Klondike clone." />
-  <meta property="og:url" content="https://ganbaru.games/freecell" />
-  <!-- og:image should be more detailed than a favicon; maybe a cropped/scaled screenshot -->
-  <meta property="og:image" content="images/meta/favicon-32x32.png" />
+  <meta property="og:url" content="https://ganbaru.games/klondike" />
+  <!-- <meta property="og:image" content="images/meta/favicon-32x32.png" /> -->
 </head>
 <body>
   <canvas id="canvas"></canvas>
 
   <section id="menu">
-    <button id="deal">Deal</button>
-    <button id="undo">Undo</button>
-    <button id="help">Help</button>
+    <button id="deal_button">Deal</button>
+    <button id="undo_button">Undo</button>
+    <button id="about_button">About</button>
   </section>
 
   <section id="status">
@@ -37,6 +36,41 @@
     <span id="time">Time: 0</span>
   </section>
 
+  <section id="about">
+    <main>
+      <h1>
+        <div class="close"><span class="bar"></span></div>
+        About Klondike
+      </h1>
+
+      <div class="content">
+        <!-- <img src="metadata/images/android-chrome-192x192.png" alt="Klondike icon"> -->
+
+        <div class="description">
+          <p>Developed by Nathan Demick. Inspired by Wes Cherry's
+            version of Solitaire for Windows. <a href="https://en.wikipedia.org/wiki/Microsoft_Solitaire" title="Read more on Wikipedia" targe="_blank">Read more on Wikipedia</a></p>
+
+          <h3>Statistics</h3>
+
+          <ul>
+            <li>Games played: <span id="playedGames">0</span></li>
+            <li>Games won: <span id="wonGames">0</span></li>
+            <!-- <li>Fastest game: <span id="fastestGame">0</span></li> -->
+          </ul>
+
+          <button id="reset">
+            <span class="text">Reset</span>
+          </button>
+        </div> <!-- /.description-->
+
+        <button id="return">
+          <span class="text">OK</span>
+        </button>
+      </div> <!-- /content-->
+    </main>
+  </section>
+
+  <script src="scripts/utils.js"></script>
   <script src="scripts/card.js"></script>
   <script src="scripts/stack.js"></script>
   <script src="scripts/grabbed.js"></script>
@@ -44,8 +78,11 @@
   <script src="scripts/waste.js"></script>
   <script src="scripts/cascade.js"></script>
   <script src="scripts/foundation.js"></script>
-  <script src="scripts/game.js"></script>
+  <script src="scripts/about.js"></script>
   <script src="scripts/card-waterfall.js"></script>
+  <script src="scripts/game.js"></script>
+
+
 
   <!-- https://tobiasahlin.com/blog/how-to-animate-box-shadow/ -->
 
