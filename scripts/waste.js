@@ -8,7 +8,7 @@ class Waste extends Stack {
 
     this.element = document.createElement('img');
     this.element.classList.add('waste');
-    this.element.src = 'images/backs/cell.png';
+    this.element.src = 'images/other/waste.png';
   }
 
   get size() {

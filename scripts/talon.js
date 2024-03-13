@@ -8,7 +8,7 @@ class Talon extends Stack {
 
     this.element = document.createElement('img');
     this.element.classList.add('talon');
-    this.element.src = 'images/backs/cell.png';
+    this.element.src = 'images/other/talon.png';
   }
 
   get size() {

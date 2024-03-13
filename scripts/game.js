@@ -210,17 +210,17 @@ const deal = async () => {
     }
 
     // TODO: figure out offset for face down cards
-    let offset = cascade.cardCount === 0 ? 0 : 25; // cascade.offset;
+    let offset = cascade.cardCount === 0 ? 0 : 25; //cascade.offset;
     let lastCard = cascade.lastCard;
     card.setParent(lastCard);
-    card.zIndex = lastCard.zIndex + 1;
-    card.animateTo(lastCard.x, lastCard.y + offset);
+    card.animateTo(lastCard.x, lastCard.y + offset, 600);
+    wait(200).then(() => card.zIndex = lastCard.zIndex + 1);
 
     if (cascade.cardCount === index + 1) {
       card.flip();
     }
 
-    await waitAsync(50);
+    await waitAsync(75);
     index = index + 1 >= cascades.length ? 0 : index + 1;
   }
 
@@ -231,6 +231,24 @@ const deal = async () => {
 
   gameOver = false;
 };
+
+const resetTalon = e => {
+  e.preventDefault();
+
+  while (waste.hasCards) {
+    const card = waste.lastCard;
+    const parent = talon.lastCard;
+    card.setParent(parent);
+    card.zIndex = parent.zIndex + 1
+    card.moveTo(talon.x, talon.y);
+    card.flip('down');
+  }
+};
+
+// The talon DOM element is hidden; can only be clicked
+// when it "runs out" of cards
+talon.element.addEventListener('mousedown', resetTalon);
+talon.element.addEventListener('touchstart', resetTalon);
 
 cards.forEach(card => {
   const onDown = e => {
@@ -255,15 +273,15 @@ cards.forEach(card => {
     if (card.stackType === 'talon') {
       const newParent = waste.lastCard;
       card.setParent(newParent);
-      card.zIndex = newParent.zIndex + 1;
-      console.log(`setting waste card z-index to ${card.zIndex}`);
-      card.animateTo(waste.x, waste.y);
+      card.animateTo(waste.x, waste.y, 500);
       card.flip();
+      wait(50).then(() => card.zIndex = newParent.zIndex + 1);
       return;
     }
 
     if (!card.faceUp && card.hasCards) {
-      console.log(`can't pick up a card stack that's not face up`)
+      log(`can't pick up a card stack that's not face up`);
+      return;
     }
 
     if (!card.faceUp && !card.hasCards) {
@@ -280,6 +298,7 @@ cards.forEach(card => {
     }
 
     // only allow alternating sequences of cards to be picked up
+    // TODO: can possibly remove this check
     if (!card.childrenInSequence) {
       console.log(`can't pick up ${card}, not a sequence!`);
       return;
@@ -400,15 +419,17 @@ const onResize = () => {
   let windowMargin = (windowWidth - tableauWidth) / 2;
 
   // tweak these values as necessary
-  let margin = (14 / 608) * tableauWidth;
+  let margin = (7 / 609) * tableauWidth;
 
   // if tableau is 608pt wide, then for 8 columns
-  // each column + margin should be 76
+  // each column + margin should be 87
 
   // cards are 72x104
-  let width = (72 / 608) * tableauWidth;
-  let height = (104 / 454) * tableauHeight;
+  let width = (80 / 609) * tableauWidth;
+  let height = (115 / 454) * tableauHeight;
   let offset = height / 3.7; // ~28px
+
+  // 0.692307692307692 ratio
 
   // enumerate over all cards/stacks in order to set their width/height
   for (const cascade of cascades) {
@@ -442,11 +463,8 @@ const onResize = () => {
   const top = margin + menu.offsetHeight;
   const left = windowMargin + margin / 2;
 
-  talon.x = windowWidth - windowMargin - margin - width;
-  talon.y = top;
-
-  waste.x = talon.x - margin - width;
-  waste.y = top;
+  talon.moveTo(windowWidth - windowMargin - margin / 2 - width, top);
+  waste.moveTo(talon.x - margin - width, top);
 
   // foundations on the left
   foundations.forEach((f, i) => {
@@ -454,17 +472,17 @@ const onResize = () => {
   });
 
   cascades.forEach((c, i) => {
-    // allows space for cells/foundation
+    // allows space for foundations
     c.moveTo(windowMargin + margin / 2 + (width + margin) * i, top + height + margin)
   });
 
   // Handle resizing <canvas> for card waterfall
   CardWaterfall.onResize(windowWidth, windowHeight);
 
-  // if in a "game over" state, cards are stacked on top of the left-most foundation, and
+  // if in a "game over" state, cards are stacked on top of the talon, and
   // won't be moved along with it, because they are not attached
   if (gameOver) {
-    cards.forEach(c => c.moveTo(foundations[0].x, foundations[0].y));
+    cards.forEach(c => c.moveTo(talon.x, talon.y));
   }
 };
 

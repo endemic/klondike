@@ -26,7 +26,8 @@ canvas {
 }
 
 .card,
-.cell,
+.waste,
+.talon,
 .foundation {
   /* width and height for these elements is set dynamically */
   image-rendering: pixelated;
