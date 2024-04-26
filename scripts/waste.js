@@ -3,6 +3,8 @@ class Waste extends Stack {
 
   offset = 0;
 
+  drawCount = 3;
+
   constructor() {
     super();
 
@@ -26,5 +28,30 @@ class Waste extends Stack {
     this.element.style.height = `${this.height}px`;
 
     console.log(`setting ${this.type} size: ${width}, ${height}`);
+  }
+
+  moveTo(x, y) {
+    this.x = x;
+    this.y = y;
+
+    this.element.style.transition = 'translate 0ms linear';
+    this.element.style.translate = `${this.x}px ${this.y}px 0px`;
+
+    this.order();
+  }
+
+  order() {
+    let card = this.lastCard;
+    let offset = 0;
+
+    while (card.type === 'card') {
+      card.animateTo(this.x - offset, this.y);
+      card = card.parent;
+
+      // only draw the first 3 cards at an offset
+      if (offset < this.offset * (this.drawCount - 1)) {
+        offset += this.offset;
+      }
+    }
   }
 }

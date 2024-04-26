@@ -27,4 +27,16 @@ class Talon extends Stack {
 
     console.log(`setting ${this.type} size: ${width}, ${height}`);
   }
+
+  moveTo(x, y) {
+    this.x = x;
+    this.y = y;
+
+    this.element.style.transition = 'translate 0ms linear';
+    this.element.style.translate = `${this.x}px ${this.y}px 0px`;
+
+    for (let card of this.children()) {
+      card.moveTo(this.x, this.y);
+    }
+  }
 }

@@ -1,6 +1,6 @@
 const SUITS = ['hearts', 'spades', 'diamonds', 'clubs'];
 const RANKS = ['ace', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king'];
-const DEBUG = false;
+const DEBUG = true;
 
 // used for custom double-click/tap implementation
 // this val is set in `onDown` function; if it is called again rapidly
@@ -210,7 +210,8 @@ const deal = async () => {
     }
 
     // TODO: figure out offset for face down cards
-    let offset = cascade.cardCount === 0 ? 0 : 25; //cascade.offset;
+    // offset for dropping face up cards is handled by the `Grabbed` class
+    let offset = cascade.cardCount === 0 ? 0 : card.offset;
     let lastCard = cascade.lastCard;
     card.setParent(lastCard);
     card.animateTo(lastCard.x, lastCard.y + offset, 600);
@@ -235,6 +236,10 @@ const deal = async () => {
 const resetTalon = e => {
   e.preventDefault();
 
+  // TODO: add a special undo case which reverses this action
+  // since source/destination/cards are known, could just compare against a string value
+  // e.g. { type: 'undoResetTalon' } which puts all the cards back in the waste
+
   while (waste.hasCards) {
     const card = waste.lastCard;
     const parent = talon.lastCard;
@@ -251,7 +256,7 @@ talon.element.addEventListener('mousedown', resetTalon);
 talon.element.addEventListener('touchstart', resetTalon);
 
 cards.forEach(card => {
-  const onDown = e => {
+  const onDown = async e => {
     e.preventDefault();
 
     if (gameOver) {
@@ -262,6 +267,8 @@ cards.forEach(card => {
     const delta = Date.now() - lastOnDownTimestamp;
     const doubleClick = delta < 500 && dist(point, previousPoint) < 15;
 
+    log(`double-click: ${doubleClick}; delta: ${delta}`);
+
     // reset the timestamp that stores the last time the player clicked
     // if the current click counts as "double", then set the timestamp way in the past
     // otherwise you get a "3 click double click" because the 2nd/3rd clicks are too close together
@@ -269,13 +276,56 @@ cards.forEach(card => {
     previousPoint = point;
 
     // check if player clicked top card of talon
-    //
     if (card.stackType === 'talon') {
-      const newParent = waste.lastCard;
-      card.setParent(newParent);
-      card.animateTo(waste.x, waste.y, 500);
-      card.flip();
-      wait(50).then(() => card.zIndex = newParent.zIndex + 1);
+
+      // how to handle three card draw?
+      // especially with an undo feature, and having the three cards slightly reveal the
+      // ones underneath
+
+      // win3 solitaire only allows a single undo!
+      // its 3 card draw shows the last 3 cards; if you play those,
+      // then the rest are in a single pile beneath
+
+      // one idea might be to call a method that arranges cards in the waste, to always fan
+      // out the top 3 cards; would play a little different, but that's OK
+
+      // I want to have an effect where picking up the top card of the waste will shift
+      // the bottom cards so that 3 are always visible; need to modify the `waste.order` method
+      // to affect the last 3 cards, or skip last card (which has been grabbed) and affect the next
+      // last 3
+
+      // might have to remove the bg image of the waste, as it looks a bit weird when cards ease over it
+      // and kinda reveal it
+
+      const drawCount = 3;
+
+      // TODO: move this into a method in the `Talon` class
+      for (let i = 0; i < drawCount; i += 1) {
+        // we've run out of cards
+        if (talon.cardCount === 0) {
+          continue;
+        }
+
+        let c = talon.lastCard;
+        const parent = waste.lastCard;
+        c.setParent(parent);
+        c.animateTo(waste.x, waste.y, 500);
+        c.flip();
+        wait(50).then(() => c.zIndex = parent.zIndex + 1);
+        await waitAsync(50);
+      }
+
+      waste.order();
+
+      // TODO: add this to undo stack
+      // will have to add a `flip` boolean
+      // might have a special "reverse draw" type of undo item, as the source/destination are known
+      undoStack.push({
+        card,
+        parent,
+        oldParent: card.parent
+      });
+
       return;
     }
 
@@ -285,7 +335,9 @@ cards.forEach(card => {
     }
 
     if (!card.faceUp && !card.hasCards) {
+      // TODO: add this to the undo stack
       card.flip();
+      log(`flip!`);
       return;
     }
 
@@ -416,20 +468,19 @@ const onResize = () => {
     tableauWidth = windowWidth;
   }
 
-  let windowMargin = (windowWidth - tableauWidth) / 2;
+  const windowMargin = (windowWidth - tableauWidth) / 2;
 
   // tweak these values as necessary
-  let margin = (7 / 609) * tableauWidth;
+  const margin = (7 / 609) * tableauWidth;
 
   // if tableau is 608pt wide, then for 8 columns
   // each column + margin should be 87
 
-  // cards are 72x104
-  let width = (80 / 609) * tableauWidth;
-  let height = (115 / 454) * tableauHeight;
-  let offset = height / 3.7; // ~28px
-
-  // 0.692307692307692 ratio
+  // cards are 90x115
+  const width = (80 / 609) * tableauWidth;
+  const height = (115 / 454) * tableauHeight;
+  const offset = height / 3.7; // ~28px
+  const faceDownOffset = height / 10;
 
   // enumerate over all cards/stacks in order to set their width/height
   for (const cascade of cascades) {
@@ -443,14 +494,16 @@ const onResize = () => {
 
   for (const card of cards) {
     card.size = { width, height };
-    card.offset = offset;
+    card.offset = faceDownOffset;
   }
 
   grabbed.size = { width, height };
   grabbed.offset = offset;
 
   talon.size = { width, height };
+
   waste.size = { width, height };
+  waste.offset = offset / 1.5;
 
   // Layout code
   const menu = document.querySelector('#menu');

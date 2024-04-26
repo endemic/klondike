@@ -124,12 +124,17 @@ class Grabbed extends Stack {
     // on the original parent
     target = target || card.parent;
 
-    log(`dropping on ${target.type || 'another card'}`);
+    log(`dropping on ${target}`);
 
     card.setParent(target);
 
     if (this.moved) {
       let offset = this.offset;
+
+      // we don't have to show as much of face down cards
+      if (target.type === 'card' && !target.faceUp) {
+        offset = target.offset;
+      }
 
       // Don't add card overlap if dropping on an empty cascade
       if (['cascade'].includes(target.type)) {

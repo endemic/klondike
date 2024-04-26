@@ -28,6 +28,6 @@ const getPoint = event => {
 
 const log = (...params) => {
   if (DEBUG) {
-    console.log(params);
+    console.log(...params);
   }
 };

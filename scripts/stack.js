@@ -15,8 +15,8 @@ class Stack {
 
   zIndex = 0;
 
-  // when positioning child cards, this is how far they overlap
-  offset = 25;
+  // dynamically set by `Game.onResize`
+  offset = null;
 
   get stackType() {
     return this.type;
@@ -82,7 +82,8 @@ class Stack {
     // move child cards
     for (let card of this.children()) {
       card.moveTo(this.x, this.y + offset);
-      offset += this.offset;
+      // face up cards need more viewable area
+      offset += card.faceUp ? this.offset : card.offset;
     }
   }
 
