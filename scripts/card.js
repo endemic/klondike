@@ -47,10 +47,13 @@ class Card {
 
    this.element = document.createElement('div');
    this.element.classList.add('card');
+   this.element.classList.add(this.rank);
+   this.element.classList.add(this.suit);
 
    const front = document.createElement('img');
    front.src = `images/${this.suit}/${this.rank}.png`;
    front.classList.add('front');
+
    const back = document.createElement('img');
    back.src = `images/other/card-back.png`;
    back.classList.add('back');
@@ -91,7 +94,7 @@ class Card {
 
   get childCount() {
     let count = 0;
-    for (let card of this.children()) {
+    for (let _card of this.children()) {
       count += 1;
     }
     return count;
@@ -140,7 +143,7 @@ class Card {
   }
 
   flip(direction) {
-    let duration = 200;
+    let duration = 600;
 
     // if `direction` is not set, then the effect is toggled
     if (direction === 'up') {
@@ -160,8 +163,8 @@ class Card {
       this.element.children[0].style.transform = 'rotateY(180deg)'; // front
       this.element.children[1].style.transform = 'rotateY(0deg)';    // back
     } else {
-      this.element.children[0].style.transform = 'rotateY(0deg)';   // front
-      this.element.children[1].style.transform = 'rotateY(-180deg)'; // back
+      this.element.children[0].style.transform = 'rotateY(360deg)';   // front
+      this.element.children[1].style.transform = 'rotateY(180deg)'; // back
     }
 
     this.faceUp = !this.faceUp;

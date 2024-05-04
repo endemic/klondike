@@ -1,6 +1,6 @@
 const SUITS = ['hearts', 'spades', 'diamonds', 'clubs'];
 const RANKS = ['ace', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'jack', 'queen', 'king'];
-const DEBUG = true;
+const DEBUG = false;
 
 // used for custom double-click/tap implementation
 // this val is set in `onDown` function; if it is called again rapidly
@@ -23,31 +23,41 @@ let firstGame = true;
 // current time elapsed in seconds
 let time = 0;
 
+let score = 0;
+
+// how many cards the player flips over at a time; can be 1 or 3
+let drawCount = 3;
+
 const cascades = [];
 for (let i = 0; i < 7; i += 1) {
-  const cascade = new Cascade();
-  // cascade.moveTo(10 + (85 * i), 100);
-  cascades.push(cascade);
-
   // these don't have a visible component,
   // so we don't need to append them to the DOM
+  cascades.push(new Cascade());
 }
 
 const foundations = [];
 for (let i = 0; i < 4; i += 1) {
   const foundation = new Foundation();
-  // foundation.moveTo(10 + (85 * i), 10);
   foundations.push(foundation);
 
   // Make these visible by adding to DOM
   document.body.append(foundation.element);
 }
 
+const wastes = [];
+for (let i = 0; i < 3; i += 1) {
+  const waste = new Waste();
+  waste.zIndex = i === 0 ? 0 : i + 24; // 24 is max number that can be in talon
+  wastes.push(waste);
+
+  // Only show the background for the first waste slot
+  if (i === 0) {
+    document.body.append(waste.element);
+  }
+}
+
 const talon = new Talon();
 document.body.append(talon.element);
-
-const waste = new Waste();
-document.body.append(waste.element);
 
 const grabbed = new Grabbed();
 
@@ -162,11 +172,13 @@ const reset = () => {
 
   cascades.forEach(c => c.child = null);
   foundations.forEach(f => f.child = null);
+  wastes.forEach(w => w.child = null);
   talon.child = null;
-  waste.child = null;
 
   time = 0;
+  score = 0;
   document.querySelector('#time').textContent = `Time: ${time}`;
+  document.querySelector('#score').textContent = `Score: ${score}`;
 
   undoStack.length = 0; // hack to empty an array
 };
@@ -199,6 +211,7 @@ const deal = async () => {
   const lastCascade = cascades[cascades.length - 1];
   let index = 0;
 
+  // the last cascade should have 7 cards when all are dealt
   while (lastCascade.cardCount < 7) {
     const card = talon.lastCard;
     const cascade = cascades[index];
@@ -221,7 +234,7 @@ const deal = async () => {
       card.flip();
     }
 
-    await waitAsync(75);
+    // await waitAsync(75);
     index = index + 1 >= cascades.length ? 0 : index + 1;
   }
 
@@ -236,18 +249,32 @@ const deal = async () => {
 const resetTalon = e => {
   e.preventDefault();
 
-  // TODO: add a special undo case which reverses this action
-  // since source/destination/cards are known, could just compare against a string value
-  // e.g. { type: 'undoResetTalon' } which puts all the cards back in the waste
+  // need a way to group multiple "actions" as a single group in order to undo
+  // if `undo` method finds an array, it will process each of the elements
+  const undoGroup = [];
 
-  while (waste.hasCards) {
-    const card = waste.lastCard;
-    const parent = talon.lastCard;
-    card.setParent(parent);
-    card.zIndex = parent.zIndex + 1
-    card.moveTo(talon.x, talon.y);
-    card.flip('down');
-  }
+  // handle the first two "special" waste stacks that only contain a single card
+  // (and only when playing 3-card draw)
+  wastes.forEach(waste => {
+    while (waste.hasCards) {
+      const card = waste.lastCard;
+      const parent = talon.lastCard;
+
+      undoGroup.push({
+        card,
+        parent,
+        oldParent: card.parent,
+        flip: true
+      });
+
+      card.setParent(parent);
+      card.zIndex = parent.zIndex + 1
+      card.moveTo(parent.x, parent.y);
+      card.flip('down');
+    }
+  });
+
+  undoStack.push(undoGroup);
 };
 
 // The talon DOM element is hidden; can only be clicked
@@ -275,56 +302,69 @@ cards.forEach(card => {
     lastOnDownTimestamp = doubleClick ? 0 : Date.now();
     previousPoint = point;
 
-    // check if player clicked top card of talon
     if (card.stackType === 'talon') {
-
-      // how to handle three card draw?
-      // especially with an undo feature, and having the three cards slightly reveal the
-      // ones underneath
-
-      // win3 solitaire only allows a single undo!
+      // NOTE: win3 solitaire only allows a single undo!
       // its 3 card draw shows the last 3 cards; if you play those,
       // then the rest are in a single pile beneath
 
-      // one idea might be to call a method that arranges cards in the waste, to always fan
-      // out the top 3 cards; would play a little different, but that's OK
+      const undoGroup = [];
 
-      // I want to have an effect where picking up the top card of the waste will shift
-      // the bottom cards so that 3 are always visible; need to modify the `waste.order` method
-      // to affect the last 3 cards, or skip last card (which has been grabbed) and affect the next
-      // last 3
+      // move any cards in wastes[2]/wastes[1] to wastes[0]
+      // do wastes[1] first so the cards will be in order
+      if (wastes[1].hasCards) {
+        const card = wastes[1].lastCard;
+        const parent = wastes[0].lastCard;
 
-      // might have to remove the bg image of the waste, as it looks a bit weird when cards ease over it
-      // and kinda reveal it
+        undoGroup.push({
+          card,
+          parent,
+          oldParent: card.parent
+        });
 
-      const drawCount = 3;
+        card.setParent(parent);
+        card.moveTo(parent.x, parent.y); // TODO: maybe animate here?
+        card.zIndex = parent.zIndex + 1;
+      }
 
-      // TODO: move this into a method in the `Talon` class
+      if (wastes[2].hasCards) {
+        const card = wastes[2].lastCard;
+        const parent = wastes[0].lastCard;
+
+        undoGroup.push({
+          card,
+          parent,
+          oldParent: card.parent
+        });
+
+        card.setParent(parent);
+        card.moveTo(parent.x, parent.y); // TODO: maybe animate here?
+        card.zIndex = parent.zIndex + 1;
+      }
+
       for (let i = 0; i < drawCount; i += 1) {
         // we've run out of cards
         if (talon.cardCount === 0) {
           continue;
         }
 
-        let c = talon.lastCard;
-        const parent = waste.lastCard;
-        c.setParent(parent);
-        c.animateTo(waste.x, waste.y, 500);
-        c.flip();
-        wait(50).then(() => c.zIndex = parent.zIndex + 1);
+        const card = talon.lastCard;
+        const parent = wastes[i].lastCard;
+
+        undoGroup.push({
+          card,
+          parent,
+          oldParent: card.parent,
+          flip: true
+        });
+
+        card.setParent(parent);
+        card.animateTo(parent.x, parent.y, 500);
+        card.flip();
+        wait(50).then(() => card.zIndex = parent.zIndex + 1);
         await waitAsync(50);
       }
 
-      waste.order();
-
-      // TODO: add this to undo stack
-      // will have to add a `flip` boolean
-      // might have a special "reverse draw" type of undo item, as the source/destination are known
-      undoStack.push({
-        card,
-        parent,
-        oldParent: card.parent
-      });
+      undoStack.push(undoGroup);
 
       return;
     }
@@ -335,9 +375,13 @@ cards.forEach(card => {
     }
 
     if (!card.faceUp && !card.hasCards) {
-      // TODO: add this to the undo stack
+      undoStack.push({
+        card,
+        flip: true
+      });
+
       card.flip();
-      log(`flip!`);
+
       return;
     }
 
@@ -476,11 +520,11 @@ const onResize = () => {
   // if tableau is 608pt wide, then for 8 columns
   // each column + margin should be 87
 
-  // cards are 90x115
+  // cards are 80x115
   const width = (80 / 609) * tableauWidth;
   const height = (115 / 454) * tableauHeight;
-  const offset = height / 3.7; // ~28px
-  const faceDownOffset = height / 10;
+  const offset = height / 3.7; // ~31px
+  const faceDownOffset = height / 10; // ~11px
 
   // enumerate over all cards/stacks in order to set their width/height
   for (const cascade of cascades) {
@@ -497,13 +541,14 @@ const onResize = () => {
     card.offset = faceDownOffset;
   }
 
-  grabbed.size = { width, height };
-  grabbed.offset = offset;
+  for (const waste of wastes) {
+    waste.size = { width, height };
+  }
 
   talon.size = { width, height };
 
-  waste.size = { width, height };
-  waste.offset = offset / 1.5;
+  grabbed.size = { width, height };
+  grabbed.offset = offset;
 
   // Layout code
   const menu = document.querySelector('#menu');
@@ -517,7 +562,11 @@ const onResize = () => {
   const left = windowMargin + margin / 2;
 
   talon.moveTo(windowWidth - windowMargin - margin / 2 - width, top);
-  waste.moveTo(talon.x - margin - width, top);
+
+  // wastes[0] is right next to the talon
+  wastes.forEach((w, i) => {
+    w.moveTo(talon.x - (margin + width) - (offset / 1.5 * i), top);
+  });
 
   // foundations on the left
   foundations.forEach((f, i) => {
@@ -545,20 +594,41 @@ const undo = () => {
     return;
   }
 
-  // get card state _before_ the most recent move
-  let { card, parent, oldParent } = undoStack.pop();
+  const actuallyDoTheUndo = undoObject => {
+    // get card state _before_ the most recent move
+    const { card, parent, oldParent, flip } = undoObject;
 
-  // reverse the relationship; remove attachment from "new" parent
-  parent.child = null;
+    if (flip) {
+      card.flip();
+    }
 
-  // we're cheating here and re-using logic from the `Grabbed` class
-  // to handle moving/animating cards back to their previous position
-  grabbed.grab(card);
+    // some undo moves are only card flips
+    if (!parent) {
+      return;
+    }
 
-  // total cheat
-  grabbed.moved = true;
+    // reverse the relationship; remove attachment from "new" parent
+    parent.child = null;
 
-  grabbed.drop(oldParent);
+    // we're cheating here and re-using logic from the `Grabbed` class
+    // to handle moving/animating cards back to their previous position
+    grabbed.grab(card);
+
+    // total cheat
+    grabbed.moved = true;
+
+    grabbed.drop(oldParent);
+  };
+
+  const previous = undoStack.pop();
+
+  if (Array.isArray(previous)) {
+    // the objects are pushed on to the group in order, so to correctly
+    // reverse, we need to reverse the list as well
+    previous.reverse().forEach(actuallyDoTheUndo);
+  } else {
+    actuallyDoTheUndo(previous);
+  }
 };
 
 const onKeyDown = e => {
@@ -573,6 +643,7 @@ const onKeyDown = e => {
 const onDeal = e => {
   e.preventDefault();
 
+  // when game first loads, we don't need to confirm
   if (!firstGame && !confirm('New game?')) {
     return;
   }
@@ -610,7 +681,7 @@ dealButton.addEventListener('mouseup', onDeal);
 undoButton.addEventListener('mouseup', onUndo);
 aboutButton.addEventListener('mouseup', showAboutScreen);
 // Mobile Safari seems to have some undocumented conditions that need
-// to be met before it will fire `click` events
+// to be met before it will fire `click` events, so we'll attach on touch events
 dealButton.addEventListener('touchend', onDeal);
 undoButton.addEventListener('touchend', onUndo);
 aboutButton.addEventListener('touchend', showAboutScreen);
