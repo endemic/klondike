@@ -323,7 +323,7 @@ cards.forEach(card => {
         });
 
         card.setParent(parent);
-        card.moveTo(parent.x, parent.y); // TODO: maybe animate here?
+        card.animateTo(parent.x, parent.y); // TODO: maybe animate here?
         card.zIndex = parent.zIndex + 1;
       }
 
@@ -338,7 +338,7 @@ cards.forEach(card => {
         });
 
         card.setParent(parent);
-        card.moveTo(parent.x, parent.y); // TODO: maybe animate here?
+        card.animateTo(parent.x, parent.y); // TODO: maybe animate here?
         card.zIndex = parent.zIndex + 1;
       }
 

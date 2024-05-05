@@ -160,11 +160,11 @@ class Card {
 
     // timing for this flip transition is defined in CSS
     if (this.faceUp) {
-      this.element.children[0].style.transform = 'rotateY(180deg)'; // front
-      this.element.children[1].style.transform = 'rotateY(0deg)';    // back
+      this.element.children[0].style.transform = 'rotateY(180deg)';   // front
+      this.element.children[1].style.transform = 'rotateY(0deg)'; // back
     } else {
-      this.element.children[0].style.transform = 'rotateY(360deg)';   // front
-      this.element.children[1].style.transform = 'rotateY(180deg)'; // back
+      this.element.children[0].style.transform = 'rotateY(0deg)'; // front
+      this.element.children[1].style.transform = 'rotateY(-180deg)';    // back
     }
 
     this.faceUp = !this.faceUp;
