@@ -82,14 +82,14 @@ class Card {
     }
   }
 
-  get stackType() {
+  get stack() {
     let parent = this.parent;
 
     while (parent.parent) {
       parent = parent.parent;
     }
 
-    return parent.type;
+    return parent;
   }
 
   get childCount() {
@@ -221,13 +221,6 @@ class Card {
 
     this.element.style.width = `${this.width}px`;
     this.element.style.height = `${this.height}px`;
-  }
-
-  get nextCardPoint() {
-    return {
-      x: this.x,
-      y: this.y + this.offset
-    };
   }
 
   get color() {

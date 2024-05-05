@@ -18,8 +18,8 @@ class Stack {
   // dynamically set by `Game.onResize`
   offset = null;
 
-  get stackType() {
-    return this.type;
+  get stack() {
+    return this;
   }
 
   get hasCards() {
@@ -44,13 +44,6 @@ class Stack {
     }
 
     return last;
-  }
-
-  get nextCardPoint() {
-    return {
-      x: this.x,
-      y: this.y
-    };
   }
 
   toString() {

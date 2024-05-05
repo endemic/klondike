@@ -293,6 +293,7 @@ cards.forEach(card => {
     const point = getPoint(e);
     const delta = Date.now() - lastOnDownTimestamp;
     const doubleClick = delta < 500 && dist(point, previousPoint) < 15;
+    const stack = card.stack;
 
     log(`double-click: ${doubleClick}; delta: ${delta}`);
 
@@ -302,7 +303,7 @@ cards.forEach(card => {
     lastOnDownTimestamp = doubleClick ? 0 : Date.now();
     previousPoint = point;
 
-    if (card.stackType === 'talon') {
+    if (stack.type === 'talon') {
       // NOTE: win3 solitaire only allows a single undo!
       // its 3 card draw shows the last 3 cards; if you play those,
       // then the rest are in a single pile beneath
@@ -367,6 +368,22 @@ cards.forEach(card => {
       undoStack.push(undoGroup);
 
       return;
+    }
+
+    // don't allow cards in waste to be picked up if there are
+    // cards in "higher" waste stacks
+    if (stack.type === 'waste') {
+      for (let i = wastes.length - 1; i >= 0; i -= 1) {
+        if (wastes[i] === stack) {
+          console.log(`no need to keep checking if cards are "above" clicked waste`);
+          break;
+        }
+
+        if (wastes[i].hasCards) {
+          console.log(`waste ${i} still has cards`);
+          return;
+        }
+      }
     }
 
     if (!card.faceUp && card.hasCards) {
@@ -596,10 +613,14 @@ const undo = () => {
 
   const actuallyDoTheUndo = undoObject => {
     // get card state _before_ the most recent move
-    const { card, parent, oldParent, flip } = undoObject;
+    const { card, parent, oldParent, flip, points } = undoObject;
 
     if (flip) {
       card.flip();
+    }
+
+    if (points) {
+      score += points;
     }
 
     // some undo moves are only card flips
@@ -640,7 +661,7 @@ const onKeyDown = e => {
   undo();
 };
 
-const onDeal = e => {
+const onDeal = async e => {
   e.preventDefault();
 
   // when game first loads, we don't need to confirm
@@ -652,6 +673,8 @@ const onDeal = e => {
 
   reset();
   stackCards();
+  // wait for a hot (milli)second for cards to be moved back to the talon
+  await waitAsync(10);
   deal();
 };
 

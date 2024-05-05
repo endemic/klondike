@@ -58,7 +58,7 @@ class Grabbed extends Stack {
     // animate child cards
     let offset = 0;
     // don't need to offset when dropping back on the talon/waste
-    let noOffset = ['talon', 'waste'].indexOf(this.child.stackType) > -1;
+    let noOffset = ['talon', 'waste'].indexOf(this.child.stack.type) > -1;
 
     for (let card of this.children()) {
       card.animateTo(point.x, point.y + offset);
@@ -144,8 +144,8 @@ class Grabbed extends Stack {
       }
 
       // don't add card overlap on foundations, waste, or talon; note that we use
-      // "stackType" here since cards can stack up on these targets
-      if (['foundation', 'waste', 'talon'].includes(target.stackType)) {
+      // "stack.type" here since cards can stack up on these targets
+      if (['foundation', 'waste', 'talon'].includes(target.stack.type)) {
         offset = 0;
       }
 
