@@ -39,4 +39,11 @@ class Talon extends Stack {
       card.moveTo(this.x, this.y);
     }
   }
+
+  // debug method to check order of cards
+  get printCards() {
+    for (let card of this.children()) {
+      console.log(card.toString());
+    }
+  }
 }

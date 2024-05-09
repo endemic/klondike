@@ -26,7 +26,7 @@ let time = 0;
 let score = 0;
 
 // how many cards the player flips over at a time; can be 1 or 3
-let drawCount = 3;
+let drawCount = parseInt(localStorage.getItem('klondike:drawCount'), 10) || 3;
 
 const cascades = [];
 for (let i = 0; i < 7; i += 1) {
@@ -222,7 +222,6 @@ const deal = async () => {
       continue;
     }
 
-    // TODO: figure out offset for face down cards
     // offset for dropping face up cards is handled by the `Grabbed` class
     let offset = cascade.cardCount === 0 ? 0 : card.offset;
     let lastCard = cascade.lastCard;
@@ -234,7 +233,7 @@ const deal = async () => {
       card.flip();
     }
 
-    // await waitAsync(75);
+    await waitAsync(75);
     index = index + 1 >= cascades.length ? 0 : index + 1;
   }
 
@@ -253,9 +252,11 @@ const resetTalon = e => {
   // if `undo` method finds an array, it will process each of the elements
   const undoGroup = [];
 
-  // handle the first two "special" waste stacks that only contain a single card
-  // (and only when playing 3-card draw)
-  wastes.forEach(waste => {
+  // flip wastes in reverse order; otherwise the first two cards are put in the wrong place
+  // this is due to the stupid way I implemented three card draw, with two extra "waste" stacks
+  for (let i = wastes.length - 1; i >= 0; i -= 1) {
+    const waste = wastes[i];
+
     while (waste.hasCards) {
       const card = waste.lastCard;
       const parent = talon.lastCard;
@@ -272,7 +273,7 @@ const resetTalon = e => {
       card.moveTo(parent.x, parent.y);
       card.flip('down');
     }
-  });
+  }
 
   undoStack.push(undoGroup);
 };

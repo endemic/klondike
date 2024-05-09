@@ -7,8 +7,10 @@ After creating `<canvas>`-based versions of Klondike and FreeCell, I decided tha
 - [x] Add undo functionality for flipping cards from talon -> waste ('n back)
 - [x] Add three card draw
 - [ ] lol you can play cards (e.g. aces) while they're being dealt
+  * I don't think I really care about this
 - [x] Add multiple waste stacks based on `cardDraw` variable
-- [ ] Only allow top-most waste to be played from
+- [x] Only allow top-most waste to be played from
 - [ ] Add score
-  * oof, will also need to undo score changes
-- [ ] fix flip animation
+  * will also need to undo score changes
+- [ ] Add checkbox toggle for 1 vs. 3 card draw
+- [x] fix flip animation

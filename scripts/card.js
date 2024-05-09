@@ -143,7 +143,7 @@ class Card {
   }
 
   flip(direction) {
-    let duration = 600;
+    let duration = 300;
 
     // if `direction` is not set, then the effect is toggled
     if (direction === 'up') {
