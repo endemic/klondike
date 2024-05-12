@@ -93,6 +93,16 @@ if (DEBUG) {
   }
 }
 
+const addToScore = p => {
+  score += p;
+
+  if (score < 0) {
+    score = 0;
+  }
+
+  document.querySelector('#score').textContent = `Score: ${score}`;
+};
+
 const checkWin = () => {
   // ensure that each foundation has 13 cards; we don't check for matching suit
   // or ascending rank because those checks are done when the card is played
@@ -112,12 +122,16 @@ const attemptToPlayOnFoundation = async card => {
     const foundation = foundations[i];
 
     if (foundation.validPlay(card)) {
-      let parent = foundation.lastCard;  // either a card or the foundation itself
+      const parent = foundation.lastCard;  // either a card or the foundation itself
+      const points = 10;  // always get 10 points for playing on a foundation
+
+      addToScore(points);
 
       undoStack.push({
         card,
         parent,
-        oldParent: card.parent
+        oldParent: card.parent,
+        points
       });
 
       card.setParent(parent);
@@ -140,11 +154,16 @@ const attemptToPlayOnFoundation = async card => {
         let wonGames = parseInt(localStorage.getItem(key), 10) || 0;
         localStorage.setItem(key, wonGames + 1);
 
-        // check for fastest game time
-        key = 'klondike:fastestGame';
-        let fastestGame = localStorage.getItem(key);
-        if (time < fastestGame) {
-          localStorage.setItem(key, time);
+        // add bonus time points to score
+        if (time >= 30) {
+          addToScore(Math.round(700000 / time));
+        }
+
+        // check for high score
+        key = 'klondike:highScore';
+        let highScore = localStorage.getItem(key);
+        if (score > highScore) {
+          localStorage.setItem(key, highScore);
         }
 
         // wait for animation to finish
@@ -275,6 +294,13 @@ const resetTalon = e => {
     }
   }
 
+  // when playing single card draw, recycling the waste loses you points
+  const points = drawCount === 1 ? -100 : 0;
+
+  addToScore(points);
+
+  undoGroup.push({ points });
+
   undoStack.push(undoGroup);
 };
 
@@ -393,9 +419,15 @@ cards.forEach(card => {
     }
 
     if (!card.faceUp && !card.hasCards) {
+      const points = 5;
+      const flip = true;
+
+      addToScore(points);
+
       undoStack.push({
         card,
-        flip: true
+        flip,
+        points
       });
 
       card.flip();
@@ -456,12 +488,18 @@ const onUp = async e => {
     // only allow placement in foundation if a valid play, and
     // player is holding a single card
     if (grabbed.overlaps(foundation) && foundation.validPlay(card) && !card.hasCards) {
-      let parent = foundation.lastCard;
+      const parent = foundation.lastCard;
+
+      // 10 points for putting card on foundation (from anywhere)
+      const points = 10;
+
+      addToScore(points);
 
       undoStack.push({
         card,
         parent,
-        oldParent: card.parent
+        oldParent: card.parent,
+        points
       });
 
       grabbed.drop(parent); // either a card or the foundation itself
@@ -486,12 +524,29 @@ const onUp = async e => {
     const cascade = cascades[i];
 
     if (grabbed.overlaps(cascade) && cascade.validPlay(card)) {
-      let parent = cascade.lastCard;
+      const parent = cascade.lastCard;
+      let points;
+
+      // -15 points if moving from foundation back down to cascade
+      // 5 points for moving from waste to cascade
+      switch (card.stack.type) {
+        case 'foundation':
+          points = -15;
+          break;
+        case 'waste':
+          points = 5;
+          break;
+        default:
+          points = 0;
+      }
+
+      addToScore(points);
 
       undoStack.push({
         card,
         parent,
-        oldParent: card.parent
+        oldParent: card.parent,
+        points
       });
 
       grabbed.drop(parent);
@@ -621,7 +676,8 @@ const undo = () => {
     }
 
     if (points) {
-      score += points;
+      // invert the point value
+      addToScore(-points);
     }
 
     // some undo moves are only card flips

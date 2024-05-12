@@ -59,12 +59,27 @@
           <p>Developed by Nathan Demick. Inspired by Wes Cherry's
             version of Solitaire for Windows. <a href="https://en.wikipedia.org/wiki/Microsoft_Solitaire" title="Read more on Wikipedia" targe="_blank">Read more on Wikipedia</a></p>
 
+          <form action="get" id="options">
+            <fieldset>
+              <legend>Options</legend>
+              <label for="card-draw-3">
+                <input type="radio" name="cardDraw" id="card-draw-3" value="3" autocomplete="off" checked>
+                3 card draw
+              </label>
+              <br>
+              <label for="card-draw-1">
+                <input type="radio" name="cardDraw" id="card-draw-1" value="1" autocomplete="off">
+                1 card draw
+              </label>
+            </fieldset>
+          </form>
+
           <h3>Statistics</h3>
 
           <ul>
             <li>Games played: <span id="playedGames">0</span></li>
             <li>Games won: <span id="wonGames">0</span></li>
-            <!-- <li>Fastest game: <span id="fastestGame">0</span></li> -->
+            <li>High score: <span id="highScore">0</span></li>
           </ul>
 
           <button id="reset">
