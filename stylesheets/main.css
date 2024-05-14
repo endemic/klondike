@@ -9,6 +9,8 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
+  user-select: none;
+  -webkit-user-select: none; /* u gotta be kidding me */
 }
 
 body {
@@ -35,8 +37,16 @@ canvas {
   perspective: 500px;
   position: absolute;
   top: 0;
+}
+
+.card:hover::after {
   /* the box shadow looks weird with the flip transition; would need to turn shadow off */
-  /* box-shadow: 0 0.2rem 0.2rem rgba(0, 0 , 0, 0.1); */
+  box-shadow: 0 0.2rem 0.2rem rgba(0, 0 , 0, 0.3);
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.5rem;
 }
 
 .card > img {
