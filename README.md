@@ -10,7 +10,9 @@ After creating `<canvas>`-based versions of Klondike and FreeCell, I decided tha
   * I don't think I really care about this
 - [x] Add multiple waste stacks based on `cardDraw` variable
 - [x] Only allow top-most waste to be played from
-- [ ] Add score
+- [x] Add score
   * will also need to undo score changes
-- [ ] Add checkbox toggle for 1 vs. 3 card draw
+  * https://en.wikipedia.org/wiki/Klondike_(solitaire)
+  * https://web.archive.org/web/20121021174637/http://support.microsoft.com/kb/101766/en-us
+- [x] Add ~~checkbox~~ radio toggle for 1 vs. 3 card draw
 - [x] fix flip animation

@@ -161,9 +161,9 @@ const attemptToPlayOnFoundation = async card => {
 
         // check for high score
         key = 'klondike:highScore';
-        let highScore = localStorage.getItem(key);
+        let highScore = parseInt(localStorage.getItem(key), 10) || 0;
         if (score > highScore) {
-          localStorage.setItem(key, highScore);
+          localStorage.setItem(key, score);
         }
 
         // wait for animation to finish
@@ -508,6 +508,25 @@ const onUp = async e => {
       console.log(`dropping ${card} on foundation #${i}`);
 
       if (checkWin()) {
+        gameOver = true;
+
+        // increment games won counter
+        let key = 'klondike:wonGames';
+        let wonGames = parseInt(localStorage.getItem(key), 10) || 0;
+        localStorage.setItem(key, wonGames + 1);
+
+        // add bonus time points to score
+        if (time >= 30) {
+          addToScore(Math.round(700000 / time));
+        }
+
+        // check for high score
+        key = 'klondike:highScore';
+        let highScore = parseInt(localStorage.getItem(key), 10) || 0;
+        if (score > highScore) {
+          localStorage.setItem(key, score);
+        }
+
         CardWaterfall.start(() => {
           reset();
           stackCards();
