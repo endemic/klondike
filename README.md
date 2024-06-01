@@ -16,3 +16,6 @@ After creating `<canvas>`-based versions of Klondike and FreeCell, I decided tha
   * https://web.archive.org/web/20121021174637/http://support.microsoft.com/kb/101766/en-us
 - [x] Add ~~checkbox~~ radio toggle for 1 vs. 3 card draw
 - [x] fix flip animation
+- [ ] resizing during card waterfall causes foundations to move to talon
+- [ ] Hide card shadow during flip animation
+- [ ] auto-save/load game state when closing page during a game
