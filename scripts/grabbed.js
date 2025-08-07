@@ -126,7 +126,7 @@ class Grabbed extends Stack {
     // on the original parent
     target = target || card.parent;
 
-    console.log(`dropping on ${target}`);
+    log(`grabbed: dropping on ${target}`);
 
     card.setParent(target);
 

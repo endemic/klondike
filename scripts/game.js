@@ -78,21 +78,6 @@ SUITS.forEach(suit => {
   });
 });
 
-if (DEBUG) {
-  for (let i = 0; i < foundations.length; i += 1) {
-    let foundation = foundations[i];
-
-    // move all cards to winning positions
-    for (let j = 0; j < 13; j += 1) {
-      let card = cards[(13 * i) + j];
-      card.flip();
-      let parent = foundation.lastCard;
-      card.setParent(parent);
-      card.moveTo(parent.x, parent.y);
-    }
-  }
-}
-
 const addToScore = p => {
   score += p;
 
@@ -198,6 +183,7 @@ const reset = () => {
   score = 0;
   document.querySelector('#time').textContent = `Time: ${time}`;
   document.querySelector('#score').textContent = `Score: ${score}`;
+  document.querySelector('#solve_button').style.display = 'none';
 
   undoStack.length = 0; // hack to empty an array
 };
@@ -260,6 +246,9 @@ const deal = async () => {
   const key = 'klondike:playedGames';
   let playedGames = parseInt(localStorage.getItem(key), 10) || 0;
   localStorage.setItem(key, playedGames + 1);
+
+  // (re)set draw count in case user changed it after last game
+  drawCount = parseInt(localStorage.getItem('klondike:drawCount'), 10) || 3;
 
   gameOver = false;
 };
@@ -402,12 +391,12 @@ cards.forEach(card => {
     if (stack.type === 'waste') {
       for (let i = wastes.length - 1; i >= 0; i -= 1) {
         if (wastes[i] === stack) {
-          console.log(`no need to keep checking if cards are "above" clicked waste`);
+          log(`no need to keep checking if cards are "above" clicked waste`);
           break;
         }
 
         if (wastes[i].hasCards) {
-          console.log(`waste ${i} still has cards`);
+          log(`waste ${i} still has cards`);
           return;
         }
       }
@@ -446,7 +435,7 @@ cards.forEach(card => {
     // only allow alternating sequences of cards to be picked up
     // TODO: can possibly remove this check
     if (!card.childrenInSequence) {
-      console.log(`can't pick up ${card}, not a sequence!`);
+      log(`can't pick up ${card}, not a sequence!`);
       return;
     }
 
@@ -461,8 +450,6 @@ cards.forEach(card => {
 });
 
 const onMove = e => {
-  e.preventDefault();
-
   if (!grabbed.hasCards) {
     return;
   }
@@ -472,9 +459,7 @@ const onMove = e => {
   grabbed.moveTo(point);
 };
 
-const onUp = async e => {
-  e.preventDefault();
-
+const onUp = async () => {
   if (!grabbed.hasCards) {
     return;
   }
@@ -505,7 +490,7 @@ const onUp = async e => {
       grabbed.drop(parent); // either a card or the foundation itself
       wait(150).then(() => card.flash());
 
-      console.log(`dropping ${card} on foundation #${i}`);
+      log(`dropping ${card} on foundation #${i}`);
 
       if (checkWin()) {
         gameOver = true;
@@ -572,6 +557,9 @@ const onUp = async e => {
 
       log(`dropping ${card} on cascade #${i}`);
 
+      // enable the "auto-solve" button if all stacks are organized
+      enableAutoSolve();
+
       // valid play, so return out of the loop checking other cells
       return;
     }
@@ -584,11 +572,48 @@ const onUp = async e => {
   grabbed.drop();
 };
 
+// If this function evaluates truthy, all stacks on the tableau are organized such that the game is won
+const enableAutoSolve = () => {
+  if (cascades.every(c => (!c.hasCards || c.child.childrenInSequence) && c.children().every(c => c.faceUp))) {
+    document.querySelector('#solve_button').style.display = 'block';
+    return true;
+  }
+
+  return false;
+};
+
+const autoSolve = async () => {
+  // what are we even doing here?
+  // 1. while the game is not won
+  // 2. loop over all cards in cells/cascades
+  // 3. call the `attemptToPlayOnFoundation` method
+
+  // early return in case you're an idiot and call `autoSolve` manually, which will totally cause an infinite loop
+  if (!enableAutoSolve()) {
+    return;
+  }
+
+  while (!checkWin()) {
+    for (const stack of cascades) {
+      if (!stack.hasCards) {
+        continue;
+      }
+
+      const playedCard = attemptToPlayOnFoundation(stack.lastCard);
+
+      if (playedCard) {
+        // delay for a hot second before playing more, so all cards aren't moved to foundations simultaneously
+        await waitAsync(50);
+      }
+    }
+  }
+};
+
 const onResize = () => {
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
 
-  const aspectRatio = 4 / 3;
+  const aspectRatio = 1;
 
   // playable area, where cards will be drawn
   let tableauWidth;
@@ -606,17 +631,27 @@ const onResize = () => {
 
   const windowMargin = (windowWidth - tableauWidth) / 2;
 
-  // tweak these values as necessary
-  const margin = (7 / 609) * tableauWidth;
+  // debug tableau size for layout testing
+  if (DEBUG) {
+    let tableauDebug = document.createElement('div');
+    tableauDebug.style.width = `${tableauWidth}px`;
+    tableauDebug.style.height = `${tableauHeight}px`;
+    tableauDebug.style.backgroundColor = 'rgba(255, 0, 255, 0.5)';
+    tableauDebug.style.position = 'absolute';
+    tableauDebug.style.top = `0`;
+    tableauDebug.style.left = `${windowMargin}px`;
+    document.body.append(tableauDebug);
+  }
 
-  // if tableau is 608pt wide, then for 8 columns
-  // each column + margin should be 87
+  const widthInPixels = 665;
+  const heightInPixels = 665;
 
-  // cards are 80x115
-  const width = (80 / 609) * tableauWidth;
-  const height = (115 / 454) * tableauHeight;
-  const offset = height / 3.7; // ~31px
-  const faceDownOffset = height / 10; // ~11px
+  // set card sizes/margins here
+  const margin = (5 / widthInPixels) * tableauWidth; // arbitrary horiztonal margin between cards (5px)
+  const width = (90 / widthInPixels) * tableauWidth; // card width (90px)
+  const height = (130 / heightInPixels) * tableauHeight; // card height (130px)
+  const offset = (35 / heightInPixels) * tableauHeight; // arbitrary vertical diff between stacked cards
+  const faceDownOffset = height / 10; // ~13px
 
   // enumerate over all cards/stacks in order to set their width/height
   for (const cascade of cascades) {
@@ -740,18 +775,22 @@ const onKeyDown = e => {
 const onDeal = async e => {
   e.preventDefault();
 
-  // when game first loads, we don't need to confirm
-  if (!firstGame && !confirm('New game?')) {
-    return;
+  if (firstGame) {
+    reset();
+    stackCards();
+    // wait for a hot (milli)second for cards to be moved back to the talon
+    await waitAsync(10);
+    deal();
+    firstGame = false;
+  } else {
+    dialog.show('Deal again?', async () => {
+      reset();
+      stackCards();
+      // wait for a hot (milli)second for cards to be moved back to the talon
+      await waitAsync(10);
+      deal();
+    });
   }
-
-  firstGame = false;
-
-  reset();
-  stackCards();
-  // wait for a hot (milli)second for cards to be moved back to the talon
-  await waitAsync(10);
-  deal();
 };
 
 const onUndo = e => {
@@ -775,15 +814,18 @@ window.addEventListener('keydown', onKeyDown);
 const dealButton = document.querySelector('#deal_button');
 const undoButton = document.querySelector('#undo_button');
 const aboutButton = document.querySelector('#about_button');
+const solveButton = document.querySelector('#solve_button');
 
 dealButton.addEventListener('mouseup', onDeal);
 undoButton.addEventListener('mouseup', onUndo);
 aboutButton.addEventListener('mouseup', showAboutScreen);
+solveButton.addEventListener('mouseup', autoSolve);
 // Mobile Safari seems to have some undocumented conditions that need
 // to be met before it will fire `click` events, so we'll attach on touch events
 dealButton.addEventListener('touchend', onDeal);
 undoButton.addEventListener('touchend', onUndo);
 aboutButton.addEventListener('touchend', showAboutScreen);
+solveButton.addEventListener('touchend', autoSolve);
 
 // start timer
 window.setInterval(() => {
@@ -799,4 +841,36 @@ window.setInterval(() => {
 onResize();
 
 // stack cards in place
-stackCards();
+// stackCards();
+
+// arrange cards in winning positions
+// Comment out `stackCards()` above to use this
+if (DEBUG) {
+  gameOver = false;
+  const usedCards = [];
+  for (let i = 0; i < 4; i += 1) {
+    let cascade = cascades[i];
+
+    // get the next unused king card
+    const king = cards.find(c => c.rank === 'king' && !usedCards.includes(c.toString()));
+    king.flip();
+    grabbed.grab(king);
+    grabbed.moved = true;
+    grabbed.drop(cascade);
+    usedCards.push(king.toString());
+
+    // now stack the remaining ranks on top of the king
+    for (let j = 11; j >= 0; j -= 1) {
+      const parent = cascade.lastCard;
+      const rank = RANKS[j];
+      const card = cards.find(c => c.color !== parent.color && c.rank === rank && !usedCards.includes(c.toString()));
+      card.flip();
+      grabbed.grab(card);
+      grabbed.moved = true;
+      grabbed.drop(parent);
+      usedCards.push(card.toString());
+    }
+  }
+
+  log(`enable autosolve: ${enableAutoSolve()}`);
+}

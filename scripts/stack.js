@@ -61,6 +61,24 @@ class Stack {
     }
   }
 
+  get childrenInSequence() {
+    // if no children, there's a sequence by default
+    if (!this.child) {
+      return true;
+    }
+
+    // if card is same color as previous, or the rank difference is greater than 1,
+    // then the subsequent cards are not in sequence
+    for (let card of this.children()) {
+      if (card.parent.color === card.color || card.diff(card.parent) !== -1) {
+        console.log(`not in sequence: ${card} after ${card.parent}`);
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   moveTo(x, y) {
     this.x = x;
     this.y = y;

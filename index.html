@@ -38,6 +38,7 @@
     <button id="deal_button">Deal</button>
     <button id="undo_button">Undo</button>
     <button id="about_button">About</button>
+    <button id="solve_button">Solve</button>
   </section>
 
   <section id="status">
@@ -45,8 +46,8 @@
     <span id="score">Score: 0</span>
   </section>
 
-  <section id="about">
-    <main>
+  <dialog id="about">
+    <section>
       <h1>
         <div class="close"><span class="bar"></span></div>
         About Klondike
@@ -56,10 +57,11 @@
         <img src="metadata/images/android-chrome-192x192.png" alt="Klondike icon">
 
         <div class="description">
-          <p>Developed by Nathan Demick. Inspired by Wes Cherry's
-            version of Solitaire for Windows. <a href="https://en.wikipedia.org/wiki/Microsoft_Solitaire" title="Read more on Wikipedia" targe="_blank">Read more on Wikipedia</a></p>
+          <p>Developed by Nathan Demick.<br>
+            Inspired by Wes Cherry's version of Solitaire for Windows.<br>
+            <a href="https://en.wikipedia.org/wiki/Microsoft_Solitaire" title="Read more on Wikipedia" target="_blank">Read more on Wikipedia</a></p>
 
-          <form action="get" id="options">
+          <form id="options">
             <fieldset>
               <legend>Options</legend>
               <label for="card-draw-3">
@@ -85,14 +87,34 @@
           <button id="reset">
             <span class="text">Reset</span>
           </button>
-        </div> <!-- /.description-->
 
-        <button id="return">
-          <span class="text">OK</span>
+          <button id="return">
+            <span class="text">OK</span>
         </button>
+        </div> <!-- /.description-->
       </div> <!-- /content-->
-    </main>
-  </section>
+    </section>
+  </dialog>
+
+  <!-- empty dialog for non-blocking `confirm` -->
+  <dialog id="confirm">
+    <section>
+      <h1>
+        <div class="close"><span class="bar"></span></div>
+        Klondike
+      </h1>
+
+      <div class="content">
+        <figure>!</figure>
+        <p id="dialog-text"></p>
+
+        <form method="dialog">
+          <button value="yes" autofocus><span class="text">Yes</span></button>
+          <button value="no"><span class="text">No</span></button>
+        </form>
+      </div> <!-- /content-->
+    </section>
+  </dialog>
 
   <script src="scripts/utils.js"></script>
   <script src="scripts/card.js"></script>

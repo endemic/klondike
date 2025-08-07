@@ -54,12 +54,30 @@ const CardWaterfall = {
   },
 
   get randomVelocity() {
-    const canvasWidth = parseInt(this.canvas.style.width, 10);
-    const canvasHeight = parseInt(this.canvas.style.height, 10);
+    // NOTE: this is duplicative with `game.onResize`
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
 
-    let x = canvasWidth * 0.003;
-    let y = canvasHeight * 0.005;
+    const aspectRatio = 1;
 
+    // determines playable area, where cards will be drawn
+    let tableauWidth;
+    let tableauHeight;
+
+    if (windowWidth / windowHeight > aspectRatio) {
+      // wider than it is tall; use the window height to calculate tableau width
+      tableauWidth = windowHeight * aspectRatio;
+      tableauHeight = windowHeight;
+    } else {
+      // taller than it is wide; use window width to calculate tableau height
+      tableauHeight = windowWidth / aspectRatio;
+      tableauWidth = windowWidth;
+    }
+
+    let x = tableauWidth * 0.003;
+    let y = tableauHeight * 0.005;
+
+    // adding x/y so that the value is not too close to zero
     let v = {
       x: ((Math.random() * x) + x) * this.randomSign,
       y: ((Math.random() * y) + y) * -1
