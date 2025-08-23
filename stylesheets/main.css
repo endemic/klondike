@@ -138,7 +138,6 @@ dialog section {
   margin: 0.5rem;
   border: 2px solid white;
   background: white;
-  height: calc(100% - 1rem); /* such lazy */
   color: black;
 }
 
