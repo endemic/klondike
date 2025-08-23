@@ -29,7 +29,6 @@ const showAboutScreen = e => {
   loadStats();
 
   // ensure correct "card draw" radio is selected
-  // TODO: steal this from pyramid
   document.querySelector(`#card-draw-${drawCount}`).checked = true;
 
   document.querySelector('#about').showModal();
