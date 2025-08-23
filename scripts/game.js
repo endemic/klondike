@@ -421,6 +421,9 @@ cards.forEach(card => {
 
       card.flip();
 
+      // check if game is in "solved" state
+      enableAutoSolve();
+
       return;
     }
 
@@ -574,11 +577,16 @@ const onUp = async () => {
 
 // If this function evaluates truthy, all stacks on the tableau are organized such that the game is won
 const enableAutoSolve = () => {
-  if (cascades.every(c => (!c.hasCards || c.child.childrenInSequence) && c.children().every(c => c.faceUp))) {
+  const cascadesAreEmptyOrInSequence = cascades.every(c => (!c.hasCards || c.child.childrenInSequence) && c.children().every(c => c.faceUp));
+  const talonIsEmpty = !talon.hasCards;
+  const wasteIsEmpty = wastes.every(w => !w.hasCards);
+
+  if (cascadesAreEmptyOrInSequence && talonIsEmpty && wasteIsEmpty) {
     document.querySelector('#solve_button').style.display = 'block';
     return true;
   }
 
+  document.querySelector('#solve_button').style.display = 'none';
   return false;
 };
 
@@ -761,6 +769,9 @@ const undo = () => {
   } else {
     actuallyDoTheUndo(previous);
   }
+
+  // enable/disable auto-solve based on undone state
+  enableAutoSolve();
 };
 
 const onKeyDown = e => {
@@ -840,11 +851,7 @@ window.setInterval(() => {
 // initial resize
 onResize();
 
-// stack cards in place
-// stackCards();
-
 // arrange cards in winning positions
-// Comment out `stackCards()` above to use this
 if (DEBUG) {
   gameOver = false;
   const usedCards = [];
